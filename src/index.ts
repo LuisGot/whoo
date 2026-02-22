@@ -1,5 +1,5 @@
-#!/usr/bin/env bun
 import { input, password } from "@inquirer/prompts";
+import { createRequire } from "node:module";
 
 import { openBrowser } from "./browser";
 import { parseArgs, readStringFlag } from "./cli";
@@ -11,7 +11,12 @@ import {
   saveConfig,
 } from "./config";
 import { DEFAULT_OAUTH_SCOPE, DEFAULT_REDIRECT_URI } from "./constants";
-import { formatOverview, formatRecovery, formatSleep, formatUser } from "./format";
+import {
+  formatOverview,
+  formatRecovery,
+  formatSleep,
+  formatUser,
+} from "./format";
 import {
   buildAuthorizeUrl,
   exchangeAuthorizationCode,
@@ -22,11 +27,18 @@ import {
 import type { Config } from "./types";
 import { fetchOverview, fetchRecovery, fetchSleep, fetchUser } from "./whoop";
 
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json") as { version?: string };
+const CLI_VERSION = packageJson.version ?? "0.0.0";
+
 const HELP_TEXT = `
 whoop-cli
 
 Usage:
   whoo <command> [options]
+
+Global options:
+  --version                  Show CLI version.
 
 Commands:
   login               Authenticate with WHOOP and store token locally.
@@ -62,6 +74,11 @@ user options:
 async function main(): Promise<void> {
   const parsed = parseArgs(process.argv.slice(2));
   const command = parsed.command;
+
+  if (command === "--version") {
+    console.log(CLI_VERSION);
+    return;
+  }
 
   if (
     !command ||
@@ -225,7 +242,9 @@ async function handleSleep(
   console.log(formatSleep(payload));
 }
 
-async function handleUser(flags: Record<string, string | boolean>): Promise<void> {
+async function handleUser(
+  flags: Record<string, string | boolean>,
+): Promise<void> {
   const config = await loadConfig();
   requireLoggedInConfig(config);
 
@@ -281,12 +300,16 @@ function readLimitFlag(flags: Record<string, string | boolean>): number {
   }
 
   if (!/^\d+$/.test(value)) {
-    throw new Error("Invalid --limit value. It must be an integer between 1 and 100.");
+    throw new Error(
+      "Invalid --limit value. It must be an integer between 1 and 100.",
+    );
   }
 
   const limit = Number(value);
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-    throw new Error("Invalid --limit value. It must be an integer between 1 and 100.");
+    throw new Error(
+      "Invalid --limit value. It must be an integer between 1 and 100.",
+    );
   }
 
   return limit;

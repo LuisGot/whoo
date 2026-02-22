@@ -1,20 +1,20 @@
 {
   "name": "whoo",
   "version": "0.1.0",
-  "description": "CLI to access your Whoop Health data through your terminal",
+  "description": "CLI to access your WHOOP health data from your terminal",
   "type": "module",
   "bin": {
-    "whoo": "./src/index.ts"
+    "whoo": "./bin/whoo.js"
   },
   "files": [
-    "src",
+    "bin",
+    "dist/whoo.js",
     "README.md"
   ],
   "scripts": {
     "start": "bun run src/index.ts",
-    "build": "mkdir -p dist && bun build --compile src/index.ts --outfile dist/whoo",
-    "install:local": "mkdir -p ~/.local/bin && install -m 755 dist/whoo ~/.local/bin/whoo",
-    "prepublishOnly": "bun run test && bun run typecheck",
+    "build": "mkdir -p dist && bun build src/index.ts --target=node --format=esm --outfile dist/whoo.js",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"
   },

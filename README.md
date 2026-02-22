@@ -1,6 +1,6 @@
 # WHOOP CLI
 
-Minimal Bun CLI to authenticate against the WHOOP API and inspect WHOOP data from the terminal.
+Minimal CLI to authenticate against the WHOOP API and inspect WHOOP data from the terminal.
 
 ## What it does
 
@@ -13,60 +13,62 @@ Minimal Bun CLI to authenticate against the WHOOP API and inspect WHOOP data fro
   - `sleep`: sleep history
   - `user`: profile + body measurements
 - Supports human-readable output and raw JSON (`--json`)
-  - Pretty output: all informational fields (metadata removed)
-  - JSON output: command payloads
 
 ## Prerequisites
 
-1. Bun `1.3+`
-2. A WHOOP developer app you create in the WHOOP developer portal
-3. Redirect URI configured in your WHOOP app (default used by this CLI):
+1. Node.js `18+` (for npm installs)
+2. Bun `1.3+` (for development/publishing in this repo)
+3. A WHOOP developer app in the WHOOP developer portal
+4. Redirect URI configured in your WHOOP app:
    - `http://127.0.0.1:8123/callback`
 
-## Install dependencies
+## Install globally
+
+With npm:
+
+```bash
+npm i -g whoo
+```
+
+With Bun:
+
+```bash
+bun add -g whoo
+```
+
+Then run:
+
+```bash
+whoo --version
+whoo help
+```
+
+## Development
+
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-## Install globally
+Run locally:
 
 ```bash
-bun add -g whoo
-whoo help
+bun run src/index.ts help
 ```
 
-## Build standalone binary
-
-Build a native executable:
+Build the Node CLI bundle used for publishing:
 
 ```bash
 bun run build
+node ./bin/whoo.js --version
 ```
 
-Run it from the project:
+## Publish
 
 ```bash
-./dist/whoo help
-```
-
-Install it to your user `PATH`:
-
-```bash
-bun run build
-bun run install:local
-```
-
-If `~/.local/bin` is not on your `PATH`, add this to your shell profile (`~/.zshrc`, `~/.bashrc`, etc):
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-After that you can run:
-
-```bash
-whoo help
+bun run prepublishOnly
+bun publish --access public
 ```
 
 ## Commands
@@ -81,17 +83,7 @@ whoo help
 whoo login
 ```
 
-The CLI opens the WHOOP login page in your browser and listens on:
-
-- `http://127.0.0.1:8123/callback`
-
-When `--client-id` and `--client-secret` are not passed, the CLI prompts for both:
-
-```bash
-whoo login
-```
-
-You can still pass both directly:
+You can pass credentials directly:
 
 ```bash
 whoo login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
@@ -101,23 +93,8 @@ whoo login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
 
 ```bash
 whoo overview
-```
-
-Cycle history:
-
-```bash
 whoo overview --limit 7
-```
-
-Raw JSON:
-
-```bash
 whoo overview --json
-```
-
-Raw JSON history:
-
-```bash
 whoo overview --limit 7 --json
 ```
 
@@ -125,11 +102,6 @@ whoo overview --limit 7 --json
 
 ```bash
 whoo recovery
-```
-
-Recovery history:
-
-```bash
 whoo recovery --limit 14
 ```
 
@@ -137,11 +109,6 @@ whoo recovery --limit 14
 
 ```bash
 whoo sleep
-```
-
-Sleep history:
-
-```bash
 whoo sleep --limit 14
 ```
 
