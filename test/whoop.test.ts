@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import type { Config } from "../src/types";
-import { fetchOverview, fetchRecovery, fetchSleep, fetchUser } from "../src/whoop";
+import {
+  fetchOverview,
+  fetchRecovery,
+  fetchSleep,
+  fetchUser,
+} from "../src/whoop";
 
 const baseConfig: Config = {
   oauth: {
@@ -63,7 +68,12 @@ describe("fetchOverview", () => {
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchOverview(baseConfig, async () => {}, { limit: 1 }, fetchImpl);
+    const payload = await fetchOverview(
+      baseConfig,
+      async () => {},
+      { limit: 1 },
+      fetchImpl,
+    );
 
     expect(payload.profile?.first_name).toBe("Test");
     expect(payload.cycles.length).toBe(1);
@@ -86,7 +96,9 @@ describe("fetchOverview", () => {
         if (!nextToken) {
           expect(url.searchParams.get("limit")).toBe("25");
           return jsonResponse({
-            records: Array.from({ length: 25 }, (_, index) => ({ id: 30 - index })),
+            records: Array.from({ length: 25 }, (_, index) => ({
+              id: 30 - index,
+            })),
             nextToken: "page-2",
           });
         }
@@ -98,12 +110,16 @@ describe("fetchOverview", () => {
         });
       }
 
-      const recoveryMatch = url.pathname.match(/^\/developer\/v2\/cycle\/(\d+)\/recovery$/);
+      const recoveryMatch = url.pathname.match(
+        /^\/developer\/v2\/cycle\/(\d+)\/recovery$/,
+      );
       if (recoveryMatch) {
         return jsonResponse({ cycle_id: Number(recoveryMatch[1]) });
       }
 
-      const sleepMatch = url.pathname.match(/^\/developer\/v2\/cycle\/(\d+)\/sleep$/);
+      const sleepMatch = url.pathname.match(
+        /^\/developer\/v2\/cycle\/(\d+)\/sleep$/,
+      );
       if (sleepMatch) {
         return jsonResponse({ cycle_id: Number(sleepMatch[1]), nap: false });
       }
@@ -111,7 +127,12 @@ describe("fetchOverview", () => {
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchOverview(baseConfig, async () => {}, { limit: 30 }, fetchImpl);
+    const payload = await fetchOverview(
+      baseConfig,
+      async () => {},
+      { limit: 30 },
+      fetchImpl,
+    );
 
     expect(payload.cycles.length).toBe(30);
     expect(payload.cycles.map((entry) => entry.cycle.id)).toEqual(
@@ -133,7 +154,9 @@ describe("fetchOverview", () => {
 
       if (url.pathname === "/developer/v2/cycle") {
         expect(url.searchParams.get("limit")).toBe("1");
-        return jsonResponse({ records: [{ start: "2026-02-20T10:00:00.000Z" }] });
+        return jsonResponse({
+          records: [{ start: "2026-02-20T10:00:00.000Z" }],
+        });
       }
 
       if (url.pathname.startsWith("/developer/v2/cycle/")) {
@@ -143,7 +166,12 @@ describe("fetchOverview", () => {
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchOverview(baseConfig, async () => {}, { limit: 1 }, fetchImpl);
+    const payload = await fetchOverview(
+      baseConfig,
+      async () => {},
+      { limit: 1 },
+      fetchImpl,
+    );
 
     expect(payload.cycles.length).toBe(1);
     expect(payload.cycles[0]?.recovery).toBeNull();
@@ -159,13 +187,20 @@ describe("fetchRecovery", () => {
 
       if (url.pathname === "/developer/v2/recovery") {
         expect(url.searchParams.get("limit")).toBe("1");
-        return jsonResponse({ records: [{ cycle_id: 99, score_state: "SCORED" }] });
+        return jsonResponse({
+          records: [{ cycle_id: 99, score_state: "SCORED" }],
+        });
       }
 
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchRecovery(baseConfig, async () => {}, { limit: 1 }, fetchImpl);
+    const payload = await fetchRecovery(
+      baseConfig,
+      async () => {},
+      { limit: 1 },
+      fetchImpl,
+    );
 
     expect(payload.recoveries.length).toBe(1);
     expect(payload.recoveries[0]?.cycle_id).toBe(99);
@@ -183,7 +218,9 @@ describe("fetchRecovery", () => {
 
     const fetchImpl = asFetch(async (input, init) => {
       const url = new URL(String(input));
-      const authorization = (init?.headers as Record<string, string> | undefined)?.Authorization;
+      const authorization = (
+        init?.headers as Record<string, string> | undefined
+      )?.Authorization;
 
       if (url.pathname === "/oauth/oauth2/token") {
         return jsonResponse(
@@ -196,18 +233,29 @@ describe("fetchRecovery", () => {
         );
       }
 
-      if (url.pathname === "/developer/v2/recovery" && authorization === "Bearer expired-access") {
+      if (
+        url.pathname === "/developer/v2/recovery" &&
+        authorization === "Bearer expired-access"
+      ) {
         return jsonResponse({ error: "unauthorized" }, 401);
       }
 
-      if (url.pathname === "/developer/v2/recovery" && authorization === "Bearer fresh-access") {
+      if (
+        url.pathname === "/developer/v2/recovery" &&
+        authorization === "Bearer fresh-access"
+      ) {
         return jsonResponse({ records: [{ cycle_id: "cycle-1" }] });
       }
 
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchRecovery(config, async () => {}, { limit: 1 }, fetchImpl);
+    const payload = await fetchRecovery(
+      config,
+      async () => {},
+      { limit: 1 },
+      fetchImpl,
+    );
 
     expect(payload.recoveries[0]?.cycle_id).toBe("cycle-1");
     expect(config.oauth?.accessToken).toBe("fresh-access");
@@ -224,7 +272,9 @@ describe("fetchRecovery", () => {
         if (!nextToken) {
           expect(url.searchParams.get("limit")).toBe("25");
           return jsonResponse({
-            records: Array.from({ length: 25 }, (_, index) => ({ cycle_id: 27 - index })),
+            records: Array.from({ length: 25 }, (_, index) => ({
+              cycle_id: 27 - index,
+            })),
             nextToken: "page-2",
           });
         }
@@ -237,7 +287,12 @@ describe("fetchRecovery", () => {
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchRecovery(baseConfig, async () => {}, { limit: 27 }, fetchImpl);
+    const payload = await fetchRecovery(
+      baseConfig,
+      async () => {},
+      { limit: 27 },
+      fetchImpl,
+    );
 
     expect(payload.recoveries.length).toBe(27);
     expect(payload.recoveries[0]?.cycle_id).toBe(27);
@@ -258,7 +313,12 @@ describe("fetchSleep", () => {
       throw new Error(`Unexpected WHOOP path: ${url.pathname}`);
     });
 
-    const payload = await fetchSleep(baseConfig, async () => {}, { limit: 1 }, fetchImpl);
+    const payload = await fetchSleep(
+      baseConfig,
+      async () => {},
+      { limit: 1 },
+      fetchImpl,
+    );
 
     expect(payload.sleeps.length).toBe(1);
     expect(payload.sleeps[0]?.id).toBe(11);

@@ -1,7 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatOverview, formatRecovery, formatSleep, formatUser } from "../src/format";
-import type { OverviewPayload, RecoveryPayload, SleepPayload, UserPayload } from "../src/types";
+import {
+  formatOverview,
+  formatRecovery,
+  formatSleep,
+  formatUser,
+} from "../src/format";
+import type {
+  OverviewPayload,
+  RecoveryPayload,
+  SleepPayload,
+  UserPayload,
+} from "../src/types";
 
 describe("formatOverview", () => {
   test("renders profile once with detailed cycle, recovery, and sleep blocks", () => {

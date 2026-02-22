@@ -42,7 +42,13 @@ export async function fetchOverview(
       persistConfig,
       fetchImpl,
     ),
-    getCollectionRecords("/developer/v2/cycle", limit, config, persistConfig, fetchImpl),
+    getCollectionRecords(
+      "/developer/v2/cycle",
+      limit,
+      config,
+      persistConfig,
+      fetchImpl,
+    ),
   ]);
 
   const cycleEntries = await mapWithConcurrency(
@@ -172,7 +178,11 @@ async function getCollectionRecords(
     const page = extractCollectionPage(payload, path);
     records.push(...page.records);
 
-    if (page.records.length === 0 || !page.nextToken || page.nextToken === nextToken) {
+    if (
+      page.records.length === 0 ||
+      !page.nextToken ||
+      page.nextToken === nextToken
+    ) {
       break;
     }
 

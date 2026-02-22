@@ -73,15 +73,19 @@ const PATH_LABELS: Record<string, string> = {
   "sleep.score.stage_summary.total_awake_time_milli": "Awake Time",
   "sleep.score.stage_summary.total_no_data_time_milli": "No Data Time",
   "sleep.score.stage_summary.total_light_sleep_time_milli": "Light Sleep",
-  "sleep.score.stage_summary.total_slow_wave_sleep_time_milli": "Slow Wave Sleep",
+  "sleep.score.stage_summary.total_slow_wave_sleep_time_milli":
+    "Slow Wave Sleep",
   "sleep.score.stage_summary.total_rem_sleep_time_milli": "REM Sleep",
   "sleep.score.stage_summary.sleep_cycle_count": "Sleep Cycles",
   "sleep.score.stage_summary.disturbance_count": "Disturbances",
   "sleep.score.sleep_needed": "Sleep Need",
   "sleep.score.sleep_needed.baseline_milli": "Baseline Sleep Need",
-  "sleep.score.sleep_needed.need_from_sleep_debt_milli": "Added Need From Sleep Debt",
-  "sleep.score.sleep_needed.need_from_recent_strain_milli": "Added Need From Recent Strain",
-  "sleep.score.sleep_needed.need_from_recent_nap_milli": "Need Reduction From Recent Nap",
+  "sleep.score.sleep_needed.need_from_sleep_debt_milli":
+    "Added Need From Sleep Debt",
+  "sleep.score.sleep_needed.need_from_recent_strain_milli":
+    "Added Need From Recent Strain",
+  "sleep.score.sleep_needed.need_from_recent_nap_milli":
+    "Need Reduction From Recent Nap",
   "sleep.score.respiratory_rate": "Respiratory Rate",
   "sleep.score.sleep_performance_percentage": "Sleep Performance",
   "sleep.score.sleep_consistency_percentage": "Sleep Consistency",
@@ -127,7 +131,12 @@ export function formatOverview(payload: OverviewPayload): string {
 }
 
 export function formatRecovery(payload: RecoveryPayload): string {
-  return formatCollection("WHOOP Recovery", "Recovery", "recovery", payload.recoveries);
+  return formatCollection(
+    "WHOOP Recovery",
+    "Recovery",
+    "recovery",
+    payload.recoveries,
+  );
 }
 
 export function formatSleep(payload: SleepPayload): string {
@@ -140,7 +149,11 @@ export function formatUser(payload: UserPayload): string {
     "",
     ...formatSection("Profile", "profile", payload.profile),
     "",
-    ...formatSection("Body Measurement", "bodyMeasurement", payload.bodyMeasurement),
+    ...formatSection(
+      "Body Measurement",
+      "bodyMeasurement",
+      payload.bodyMeasurement,
+    ),
   ].join("\n");
 }
 
@@ -223,7 +236,11 @@ function filterMetadataValue(value: JsonValue): JsonValue | undefined {
   return value;
 }
 
-function formatField(path: string[], value: JsonValue, indent: number): string[] {
+function formatField(
+  path: string[],
+  value: JsonValue,
+  indent: number,
+): string[] {
   const label = toLabel(path);
   const prefix = `${" ".repeat(indent)}${label}:`;
 
@@ -296,7 +313,10 @@ function isScalar(value: JsonValue): value is string | number | boolean | null {
   );
 }
 
-function formatScalar(path: string[], value: string | number | boolean | null): string {
+function formatScalar(
+  path: string[],
+  value: string | number | boolean | null,
+): string {
   if (value === null) {
     return path.join(".") === "cycle.end" ? "In progress" : "Not available";
   }
