@@ -21,6 +21,7 @@ import {
   buildAuthorizeUrl,
   exchangeAuthorizationCode,
   generateState,
+  parseAuthCodeFromCallbackUrl,
   tokenResponseToConfig,
   waitForAuthCode,
 } from "./oauth";
@@ -53,6 +54,7 @@ Commands:
 login options:
   --client-id <id>
   --client-secret <secret>
+  --manual                   Manual login for SSH/headless use (paste callback URL).
   If omitted, both values are prompted in the terminal.
 
 overview options:
@@ -161,13 +163,11 @@ async function handleLogin(
     state,
     scope,
   });
-  const codePromise = waitForAuthCode({ redirectUri, expectedState: state });
+  const useManualLogin = flags.manual === true || flags.manual === "true";
+  const code = useManualLogin
+    ? await getManualAuthCode(authorizeUrl, redirectUri, state)
+    : await getCallbackAuthCode(authorizeUrl, redirectUri, state);
 
-  console.log("Opening browser for WHOOP login...");
-  await openBrowser(authorizeUrl);
-  console.log(`If the browser does not open, use this URL:\n${authorizeUrl}`);
-
-  const code = await codePromise;
   const token = await exchangeAuthorizationCode({
     code,
     clientId,
@@ -186,6 +186,46 @@ async function handleLogin(
 
   await saveConfig(config);
   console.log("Login successful.");
+}
+
+async function getCallbackAuthCode(
+  authorizeUrl: string,
+  redirectUri: string,
+  state: string,
+): Promise<string> {
+  const codePromise = waitForAuthCode({ redirectUri, expectedState: state });
+
+  console.log("Opening browser for WHOOP login...");
+  try {
+    await openBrowser(authorizeUrl);
+  } catch {
+    console.log("Could not open a browser automatically.");
+  }
+  console.log(`If the browser does not open, use this URL:\n${authorizeUrl}`);
+
+  return await codePromise;
+}
+
+async function getManualAuthCode(
+  authorizeUrl: string,
+  redirectUri: string,
+  state: string,
+): Promise<string> {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    throw new Error("Manual login requires a TTY.");
+  }
+
+  console.log(
+    "Manual login mode: open this URL in any browser, complete login, then paste the full callback URL here.",
+  );
+  console.log(authorizeUrl);
+
+  const callbackUrl = (await promptRequiredInput("Paste callback URL")).trim();
+  return parseAuthCodeFromCallbackUrl({
+    callbackUrl,
+    redirectUri,
+    expectedState: state,
+  });
 }
 
 async function handleOverview(

@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildAuthorizeUrl, tokenResponseToConfig } from "../src/oauth";
+import {
+  buildAuthorizeUrl,
+  parseAuthCodeFromCallbackUrl,
+  tokenResponseToConfig,
+} from "../src/oauth";
 
 describe("oauth", () => {
   test("builds authorize URL", () => {
@@ -30,5 +34,50 @@ describe("oauth", () => {
 
     expect(converted.accessToken).toBe("access");
     expect(converted.refreshToken).toBe("refresh");
+  });
+
+  test("extracts auth code from manual callback URL", () => {
+    const code = parseAuthCodeFromCallbackUrl({
+      callbackUrl:
+        "http://127.0.0.1:8123/callback?code=auth-code-1&state=state-abc",
+      redirectUri: "http://127.0.0.1:8123/callback",
+      expectedState: "state-abc",
+    });
+
+    expect(code).toBe("auth-code-1");
+  });
+
+  test("rejects manual callback URL with invalid state", () => {
+    expect(() =>
+      parseAuthCodeFromCallbackUrl({
+        callbackUrl:
+          "http://127.0.0.1:8123/callback?code=auth-code-1&state=wrong",
+        redirectUri: "http://127.0.0.1:8123/callback",
+        expectedState: "state-abc",
+      }),
+    ).toThrow("Invalid OAuth state in callback URL.");
+  });
+
+  test("rejects manual callback URL missing code", () => {
+    expect(() =>
+      parseAuthCodeFromCallbackUrl({
+        callbackUrl: "http://127.0.0.1:8123/callback?state=state-abc",
+        redirectUri: "http://127.0.0.1:8123/callback",
+        expectedState: "state-abc",
+      }),
+    ).toThrow("Missing authorization code in callback URL.");
+  });
+
+  test("rejects manual callback URL for a different redirect target", () => {
+    expect(() =>
+      parseAuthCodeFromCallbackUrl({
+        callbackUrl:
+          "http://localhost:8123/callback?code=auth-code-1&state=state-abc",
+        redirectUri: "http://127.0.0.1:8123/callback",
+        expectedState: "state-abc",
+      }),
+    ).toThrow(
+      "Callback URL does not match the configured redirect URI. Please copy the full redirected URL.",
+    );
   });
 });

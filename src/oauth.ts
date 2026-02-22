@@ -21,6 +21,12 @@ interface CallbackOptions {
   timeoutMs?: number;
 }
 
+interface ManualCodeOptions {
+  callbackUrl: string;
+  redirectUri: string;
+  expectedState: string;
+}
+
 export function generateState(): string {
   return randomBytes(16).toString("hex");
 }
@@ -140,6 +146,51 @@ export async function waitForAuthCode(
       resolve(code);
     }
   });
+}
+
+export function parseAuthCodeFromCallbackUrl(options: ManualCodeOptions): string {
+  let callbackUrl: URL;
+  let expectedRedirectUrl: URL;
+
+  try {
+    callbackUrl = new URL(options.callbackUrl);
+  } catch {
+    throw new Error("Manual login expects a valid callback URL.");
+  }
+
+  try {
+    expectedRedirectUrl = new URL(options.redirectUri);
+  } catch {
+    throw new Error("Invalid redirect URI configuration.");
+  }
+
+  if (
+    callbackUrl.protocol !== expectedRedirectUrl.protocol ||
+    callbackUrl.hostname !== expectedRedirectUrl.hostname ||
+    callbackUrl.port !== expectedRedirectUrl.port ||
+    callbackUrl.pathname !== expectedRedirectUrl.pathname
+  ) {
+    throw new Error(
+      "Callback URL does not match the configured redirect URI. Please copy the full redirected URL.",
+    );
+  }
+
+  const error = callbackUrl.searchParams.get("error");
+  if (error) {
+    throw new Error(`Authentication failed: ${error}`);
+  }
+
+  const receivedState = callbackUrl.searchParams.get("state");
+  if (receivedState !== options.expectedState) {
+    throw new Error("Invalid OAuth state in callback URL.");
+  }
+
+  const code = callbackUrl.searchParams.get("code");
+  if (!code) {
+    throw new Error("Missing authorization code in callback URL.");
+  }
+
+  return code;
 }
 
 export async function exchangeAuthorizationCode(params: {

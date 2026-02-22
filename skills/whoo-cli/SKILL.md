@@ -26,6 +26,14 @@ whoo login                                          # prompts for credentials, o
 whoo login --client-id <ID> --client-secret <SEC>  # non-interactive
 ```
 
+For SSH or headless environments where `http://127.0.0.1:8123` is not reachable, use `--manual`.
+It prints the auth URL; complete login in any browser, then paste the full callback URL back:
+
+```bash
+whoo login --manual
+whoo login --manual --client-id <ID> --client-secret <SEC>
+```
+
 Tokens persist in the OS config directory and refresh automatically. Check auth state anytime:
 
 ```bash
@@ -45,6 +53,7 @@ whoo status
 
 - `--limit <n>` — records to return (1–100, default 1)
 - `--json` — raw JSON payload; use this for programmatic access
+- `--manual` — manual login for SSH/headless; paste callback URL instead of browser auto-redirect
 
 ## Common Workflows
 

@@ -82,6 +82,13 @@ You can pass credentials directly:
 whoo login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
 ```
 
+For SSH/headless setups where localhost callback is not reachable, use manual mode:
+
+```bash
+whoo login --manual
+whoo login --manual --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
+```
+
 ### Overview
 
 ```bash
