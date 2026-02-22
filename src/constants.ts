@@ -1,4 +1,4 @@
-export const APP_NAME = "whoop-cli";
+export const APP_NAME = "whoo";
 export const DEFAULT_REDIRECT_URI = "http://127.0.0.1:8123/callback";
 export const DEFAULT_CALLBACK_TIMEOUT_MS = 120_000;
 export const DEFAULT_OAUTH_SCOPE = [

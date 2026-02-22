@@ -1,4 +1,4 @@
-# WHOOP CLI
+# whoo
 
 Minimal CLI to authenticate against the WHOOP API and inspect WHOOP data from the terminal.
 
@@ -134,6 +134,6 @@ whoo logout
 
 Config is written to:
 
-- Linux: `~/.config/whoop-cli/config.json`
-- macOS: `~/Library/Application Support/whoop-cli/config.json`
-- Windows: `%AppData%/whoop-cli/config.json`
+- Linux: `~/.config/whoo/config.json`
+- macOS: `~/Library/Application Support/whoo/config.json`
+- Windows: `%AppData%/whoo/config.json`

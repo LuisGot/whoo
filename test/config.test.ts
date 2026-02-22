@@ -36,7 +36,7 @@ describe("config", () => {
 });
 
 async function createTempConfigRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "whoop-cli-test-"));
+  const root = await mkdtemp(join(tmpdir(), "whoo-test-"));
   tempRoots.push(root);
   return root;
 }

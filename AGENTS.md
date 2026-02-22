@@ -35,7 +35,7 @@
 ## Security & Configuration Tips
 
 - Never commit WHOOP credentials, tokens, or local config files.
-- Config is stored via `conf` in the OS app config directory (`whoop-cli/config.json`).
+- Config is stored via `conf` in the OS app config directory (`whoo/config.json`).
 - Mask secrets in logs and screenshots.
 
 ## Sources and references:

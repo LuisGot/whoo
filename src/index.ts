@@ -32,7 +32,7 @@ const packageJson = require("../package.json") as { version?: string };
 const CLI_VERSION = packageJson.version ?? "0.0.0";
 
 const HELP_TEXT = `
-whoop-cli
+whoo
 
 Usage:
   whoo <command> [options]
@@ -47,7 +47,7 @@ Commands:
   sleep               Fetch WHOOP sleep data.
   user                Fetch WHOOP user profile and body measurements.
   status              Show auth/config status.
-  logout              Remove all WHOOP CLI config.
+  logout              Remove all whoo config.
   help                Show this help text.
 
 login options:
@@ -272,7 +272,7 @@ async function handleStatus(): Promise<void> {
 
 async function handleLogout(): Promise<void> {
   await clearAllConfig();
-  console.log("Removed all WHOOP CLI config.");
+  console.log("Removed all whoo config.");
 }
 
 function requireLoggedInConfig(config: Config): void {
