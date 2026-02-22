@@ -1,8 +1,11 @@
 {
-  "name": "whoo",
+  "name": "@luisgot/whoo",
   "version": "0.1.0",
   "description": "CLI to access your WHOOP health data from your terminal",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "whoo": "./bin/whoo.js"
   },

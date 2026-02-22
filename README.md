@@ -27,13 +27,13 @@ Minimal CLI to authenticate against the WHOOP API and inspect WHOOP data from th
 With npm:
 
 ```bash
-npm i -g whoo
+npm i -g @luisgot/whoo
 ```
 
 With Bun:
 
 ```bash
-bun add -g whoo
+bun add -g @luisgot/whoo
 ```
 
 Then run:
@@ -68,7 +68,7 @@ node ./bin/whoo.js --version
 
 ```bash
 bun run prepublishOnly
-bun publish --access public
+npm publish --access public
 ```
 
 ## Commands
