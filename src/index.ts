@@ -26,7 +26,7 @@ const HELP_TEXT = `
 whoop-cli
 
 Usage:
-  whoop <command> [options]
+  whoo <command> [options]
 
 Commands:
   login               Authenticate with WHOOP and store token locally.
@@ -262,7 +262,7 @@ function requireLoggedInConfig(config: Config): void {
     !config.oauth?.clientSecret ||
     !config.oauth?.refreshToken
   ) {
-    throw new Error("Missing login credentials. Run `whoop login` first.");
+    throw new Error("Missing login credentials. Run `whoo login` first.");
   }
 }
 

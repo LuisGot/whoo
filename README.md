@@ -29,97 +29,138 @@ Minimal Bun CLI to authenticate against the WHOOP API and inspect WHOOP data fro
 bun install
 ```
 
+## Install globally
+
+```bash
+bun add -g whoo
+whoo help
+```
+
+## Build standalone binary
+
+Build a native executable:
+
+```bash
+bun run build
+```
+
+Run it from the project:
+
+```bash
+./dist/whoo help
+```
+
+Install it to your user `PATH`:
+
+```bash
+bun run build
+bun run install:local
+```
+
+If `~/.local/bin` is not on your `PATH`, add this to your shell profile (`~/.zshrc`, `~/.bashrc`, etc):
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+After that you can run:
+
+```bash
+whoo help
+```
+
 ## Commands
 
 ```bash
-bun run src/index.ts help
+whoo help
 ```
 
 ### Login
 
 ```bash
-bun run src/index.ts login
+whoo login
 ```
 
 The CLI opens the WHOOP login page in your browser and listens on:
+
 - `http://127.0.0.1:8123/callback`
 
 When `--client-id` and `--client-secret` are not passed, the CLI prompts for both:
 
 ```bash
-bun run src/index.ts login
+whoo login
 ```
 
 You can still pass both directly:
 
 ```bash
-bun run src/index.ts login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
+whoo login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
 ```
 
 ### Overview
 
 ```bash
-bun run src/index.ts overview
+whoo overview
 ```
 
 Cycle history:
 
 ```bash
-bun run src/index.ts overview --limit 7
+whoo overview --limit 7
 ```
 
 Raw JSON:
 
 ```bash
-bun run src/index.ts overview --json
+whoo overview --json
 ```
 
 Raw JSON history:
 
 ```bash
-bun run src/index.ts overview --limit 7 --json
+whoo overview --limit 7 --json
 ```
 
 ### Recovery
 
 ```bash
-bun run src/index.ts recovery
+whoo recovery
 ```
 
 Recovery history:
 
 ```bash
-bun run src/index.ts recovery --limit 14
+whoo recovery --limit 14
 ```
 
 ### Sleep
 
 ```bash
-bun run src/index.ts sleep
+whoo sleep
 ```
 
 Sleep history:
 
 ```bash
-bun run src/index.ts sleep --limit 14
+whoo sleep --limit 14
 ```
 
 ### User
 
 ```bash
-bun run src/index.ts user
+whoo user
 ```
 
 ### Status
 
 ```bash
-bun run src/index.ts status
+whoo status
 ```
 
 ### Logout
 
 ```bash
-bun run src/index.ts logout
+whoo logout
 ```
 
 ## Config path

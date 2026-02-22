@@ -292,7 +292,7 @@ async function ensureAccessToken(
     !config.oauth.clientId ||
     !config.oauth.clientSecret
   ) {
-    throw new Error("Missing OAuth configuration. Run `whoop login` first.");
+    throw new Error("Missing OAuth configuration. Run `whoo login` first.");
   }
 
   if (config.oauth.accessToken) {
