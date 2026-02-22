@@ -4,6 +4,7 @@ export const DEFAULT_CALLBACK_TIMEOUT_MS = 120_000;
 export const DEFAULT_OAUTH_SCOPE = [
   "offline",
   "read:profile",
+  "read:body_measurement",
   "read:cycles",
   "read:recovery",
   "read:sleep",

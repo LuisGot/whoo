@@ -1,4 +1,11 @@
-import type { JsonObject, JsonValue, OverviewPayload } from "./types";
+import type {
+  JsonObject,
+  JsonValue,
+  OverviewPayload,
+  RecoveryPayload,
+  SleepPayload,
+  UserPayload,
+} from "./types";
 
 const METADATA_KEYS = new Set(["id", "created_at", "updated_at", "version"]);
 const DURATION_MS_KEYS = new Set([
@@ -25,12 +32,8 @@ const HEART_RATE_KEYS = new Set([
   "average_heart_rate",
   "max_heart_rate",
 ]);
-const SECTION_LABELS: Record<keyof OverviewPayload, string> = {
-  profile: "Profile",
-  cycle: "Cycle",
-  recovery: "Recovery",
-  sleep: "Sleep",
-};
+const DIVIDER = "----------------------------------------";
+
 const PATH_LABELS: Record<string, string> = {
   profile: "Profile",
   "profile.first_name": "First Name",
@@ -70,60 +73,127 @@ const PATH_LABELS: Record<string, string> = {
   "sleep.score.stage_summary.total_awake_time_milli": "Awake Time",
   "sleep.score.stage_summary.total_no_data_time_milli": "No Data Time",
   "sleep.score.stage_summary.total_light_sleep_time_milli": "Light Sleep",
-  "sleep.score.stage_summary.total_slow_wave_sleep_time_milli":
-    "Slow Wave Sleep",
+  "sleep.score.stage_summary.total_slow_wave_sleep_time_milli": "Slow Wave Sleep",
   "sleep.score.stage_summary.total_rem_sleep_time_milli": "REM Sleep",
   "sleep.score.stage_summary.sleep_cycle_count": "Sleep Cycles",
   "sleep.score.stage_summary.disturbance_count": "Disturbances",
   "sleep.score.sleep_needed": "Sleep Need",
   "sleep.score.sleep_needed.baseline_milli": "Baseline Sleep Need",
-  "sleep.score.sleep_needed.need_from_sleep_debt_milli":
-    "Added Need From Sleep Debt",
-  "sleep.score.sleep_needed.need_from_recent_strain_milli":
-    "Added Need From Recent Strain",
-  "sleep.score.sleep_needed.need_from_recent_nap_milli":
-    "Need Reduction From Recent Nap",
+  "sleep.score.sleep_needed.need_from_sleep_debt_milli": "Added Need From Sleep Debt",
+  "sleep.score.sleep_needed.need_from_recent_strain_milli": "Added Need From Recent Strain",
+  "sleep.score.sleep_needed.need_from_recent_nap_milli": "Need Reduction From Recent Nap",
   "sleep.score.respiratory_rate": "Respiratory Rate",
   "sleep.score.sleep_performance_percentage": "Sleep Performance",
   "sleep.score.sleep_consistency_percentage": "Sleep Consistency",
   "sleep.score.sleep_efficiency_percentage": "Sleep Efficiency",
+
+  bodyMeasurement: "Body Measurement",
+  "bodyMeasurement.max_heart_rate": "Maximum Heart Rate",
 };
 
 export function formatOverview(payload: OverviewPayload): string {
-  const sections = (Object.keys(payload) as Array<keyof OverviewPayload>).map(
-    (key) => formatSection(key, payload[key]),
-  );
+  const lines: string[] = [
+    "WHOOP Overview",
+    "",
+    ...formatSection("Profile", "profile", payload.profile),
+  ];
 
-  return ["WHOOP Overview", "", ...sections].join("\n");
+  if (payload.cycles.length === 0) {
+    lines.push("", "Cycles:", "  No data available.");
+    return lines.join("\n");
+  }
+
+  payload.cycles.forEach((entry, index) => {
+    lines.push("");
+
+    if (index > 0) {
+      lines.push(DIVIDER, "");
+    }
+
+    lines.push(`Cycle ${index + 1}:`);
+
+    const cycleGroup = [
+      ...formatSection("Cycle", "cycle", entry.cycle),
+      "",
+      ...formatSection("Recovery", "recovery", entry.recovery),
+      "",
+      ...formatSection("Sleep", "sleep", entry.sleep),
+    ];
+
+    lines.push(...indentLines(trimTrailingBlanks(cycleGroup), 2));
+  });
+
+  return lines.join("\n");
+}
+
+export function formatRecovery(payload: RecoveryPayload): string {
+  return formatCollection("WHOOP Recovery", "Recovery", "recovery", payload.recoveries);
+}
+
+export function formatSleep(payload: SleepPayload): string {
+  return formatCollection("WHOOP Sleep", "Sleep", "sleep", payload.sleeps);
+}
+
+export function formatUser(payload: UserPayload): string {
+  return [
+    "WHOOP User",
+    "",
+    ...formatSection("Profile", "profile", payload.profile),
+    "",
+    ...formatSection("Body Measurement", "bodyMeasurement", payload.bodyMeasurement),
+  ].join("\n");
+}
+
+function formatCollection(
+  title: string,
+  itemLabel: string,
+  basePath: string,
+  records: JsonObject[],
+): string {
+  const lines: string[] = [title, ""];
+
+  if (records.length === 0) {
+    lines.push(`${itemLabel}:`, "  No data available.");
+    return lines.join("\n");
+  }
+
+  records.forEach((record, index) => {
+    if (index > 0) {
+      lines.push("", DIVIDER, "");
+    }
+
+    lines.push(...formatSection(`${itemLabel} ${index + 1}`, basePath, record));
+  });
+
+  return lines.join("\n");
 }
 
 function formatSection(
-  sectionKey: keyof OverviewPayload,
+  title: string,
+  basePath: string,
   record: JsonObject | null,
-): string {
-  const title = SECTION_LABELS[sectionKey];
+  indent = 0,
+): string[] {
+  const prefix = " ".repeat(indent);
+
   if (!record) {
-    return noDataSection(title);
+    return [`${prefix}${title}:`, `${prefix}  No data available.`];
   }
 
   const filtered = filterMetadataValue(record);
   if (!isObject(filtered)) {
-    return noDataSection(title);
+    return [`${prefix}${title}:`, `${prefix}  No data available.`];
   }
 
   const lines = Object.entries(filtered).flatMap(([key, value]) => {
-    const path = [sectionKey, key];
-    return formatField(path, value, 2);
+    return formatField([basePath, key], value, indent + 2);
   });
+
   if (lines.length === 0) {
-    return noDataSection(title);
+    return [`${prefix}${title}:`, `${prefix}  No data available.`];
   }
 
-  return [`${title}:`, ...lines].join("\n");
-}
-
-function noDataSection(title: string): string {
-  return [`${title}:`, "  No data available."].join("\n");
+  return [`${prefix}${title}:`, ...lines];
 }
 
 function filterMetadataValue(value: JsonValue): JsonValue | undefined {
@@ -135,6 +205,7 @@ function filterMetadataValue(value: JsonValue): JsonValue | undefined {
 
   if (isObject(value)) {
     const filtered: JsonObject = {};
+
     for (const [key, nested] of Object.entries(value)) {
       if (METADATA_KEYS.has(key) || key.endsWith("_id")) {
         continue;
@@ -152,13 +223,10 @@ function filterMetadataValue(value: JsonValue): JsonValue | undefined {
   return value;
 }
 
-function formatField(
-  path: string[],
-  value: JsonValue,
-  indent: number,
-): string[] {
+function formatField(path: string[], value: JsonValue, indent: number): string[] {
   const label = toLabel(path);
   const prefix = `${" ".repeat(indent)}${label}:`;
+
   if (isScalar(value)) {
     return [`${prefix} ${formatScalar(path, value)}`];
   }
@@ -176,9 +244,9 @@ function formatChildren(
       return [`${" ".repeat(indent)}[]`];
     }
 
-    return value.flatMap((item, index) =>
-      formatField([...parentPath, String(index)], item, indent),
-    );
+    return value.flatMap((item, index) => {
+      return formatField([...parentPath, String(index)], item, indent);
+    });
   }
 
   const entries = Object.entries(value);
@@ -186,9 +254,9 @@ function formatChildren(
     return [`${" ".repeat(indent)}{}`];
   }
 
-  return entries.flatMap(([key, nested]) =>
-    formatField([...parentPath, key], nested, indent),
-  );
+  return entries.flatMap(([key, nested]) => {
+    return formatField([...parentPath, key], nested, indent);
+  });
 }
 
 function toLabel(path: string[]): string {
@@ -228,10 +296,7 @@ function isScalar(value: JsonValue): value is string | number | boolean | null {
   );
 }
 
-function formatScalar(
-  path: string[],
-  value: string | number | boolean | null,
-): string {
+function formatScalar(path: string[], value: string | number | boolean | null): string {
   if (value === null) {
     return path.join(".") === "cycle.end" ? "In progress" : "Not available";
   }
@@ -242,9 +307,11 @@ function formatScalar(
 
   if (typeof value === "string") {
     const key = path[path.length - 1];
+
     if (!Number.isNaN(Date.parse(value))) {
       return formatTimestamp(value);
     }
+
     if (key === "score_state") {
       return value
         .toLowerCase()
@@ -252,9 +319,11 @@ function formatScalar(
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
     }
+
     if (key === "timezone_offset") {
       return value === "Z" ? "UTC+00:00" : `UTC${value}`;
     }
+
     return value;
   }
 
@@ -277,15 +346,19 @@ function formatNumber(key: string, value: number): string {
   if (key === "hrv_rmssd_milli") {
     return `${formatDecimal(value, 2)} ms`;
   }
+
   if (key === "respiratory_rate") {
     return `${formatDecimal(value, 2)} breaths/min`;
   }
+
   if (key === "skin_temp_celsius") {
     return `${formatDecimal(value, 2)} °C`;
   }
+
   if (key === "kilojoule") {
     return `${formatDecimal(value, 2)} kJ`;
   }
+
   if (key === "strain") {
     return `${formatDecimal(value, 2)} / 21`;
   }
@@ -304,9 +377,11 @@ function formatDurationMs(milliseconds: number): string {
   if (hours > 0) {
     parts.push(`${hours}h`);
   }
+
   if (minutes > 0 || hours > 0) {
     parts.push(`${minutes}m`);
   }
+
   if (seconds > 0 || parts.length === 0) {
     parts.push(`${seconds}s`);
   }
@@ -330,6 +405,21 @@ function formatTimestamp(timestamp: string): string {
     dateStyle: "medium",
     timeStyle: "medium",
   }).format(parsed);
+}
+
+function indentLines(lines: string[], spaces: number): string[] {
+  const prefix = " ".repeat(spaces);
+  return lines.map((line) => `${prefix}${line}`);
+}
+
+function trimTrailingBlanks(lines: string[]): string[] {
+  const result = [...lines];
+
+  while (result.length > 0 && result[result.length - 1] === "") {
+    result.pop();
+  }
+
+  return result;
 }
 
 function isObject(value: unknown): value is JsonObject {

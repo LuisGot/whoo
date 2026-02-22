@@ -1,20 +1,20 @@
 # WHOOP CLI
 
-Minimal Bun CLI to authenticate against the WHOOP API and show your latest overview data.
+Minimal Bun CLI to authenticate against the WHOOP API and inspect WHOOP data from the terminal.
 
 ## What it does
 
 - One-time OAuth login with browser callback on localhost
 - Stores token + client credentials in your OS config directory
 - Reuses and refreshes token automatically
-- Fetches WHOOP overview data sections:
-  - profile
-  - cycle
-  - recovery
-  - sleep
+- Fetches WHOOP data by command:
+  - `overview`: profile + cycle history with per-cycle recovery/sleep
+  - `recovery`: recovery history
+  - `sleep`: sleep history
+  - `user`: profile + body measurements
 - Supports human-readable output and raw JSON (`--json`)
   - Pretty output: all informational fields (metadata removed)
-  - JSON output: raw API payloads
+  - JSON output: command payloads
 
 ## Prerequisites
 
@@ -62,10 +62,52 @@ bun run src/index.ts login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CL
 bun run src/index.ts overview
 ```
 
+Cycle history:
+
+```bash
+bun run src/index.ts overview --limit 7
+```
+
 Raw JSON:
 
 ```bash
 bun run src/index.ts overview --json
+```
+
+Raw JSON history:
+
+```bash
+bun run src/index.ts overview --limit 7 --json
+```
+
+### Recovery
+
+```bash
+bun run src/index.ts recovery
+```
+
+Recovery history:
+
+```bash
+bun run src/index.ts recovery --limit 14
+```
+
+### Sleep
+
+```bash
+bun run src/index.ts sleep
+```
+
+Sleep history:
+
+```bash
+bun run src/index.ts sleep --limit 14
+```
+
+### User
+
+```bash
+bun run src/index.ts user
 ```
 
 ### Status

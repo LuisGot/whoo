@@ -26,9 +26,26 @@ export interface TokenResponse {
   refresh_token?: string;
 }
 
-export interface OverviewPayload {
-  profile: JsonObject | null;
-  cycle: JsonObject | null;
+export interface OverviewCycleEntry {
+  cycle: JsonObject;
   recovery: JsonObject | null;
   sleep: JsonObject | null;
+}
+
+export interface OverviewPayload {
+  profile: JsonObject | null;
+  cycles: OverviewCycleEntry[];
+}
+
+export interface RecoveryPayload {
+  recoveries: JsonObject[];
+}
+
+export interface SleepPayload {
+  sleeps: JsonObject[];
+}
+
+export interface UserPayload {
+  profile: JsonObject | null;
+  bodyMeasurement: JsonObject | null;
 }

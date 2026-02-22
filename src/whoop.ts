@@ -1,8 +1,21 @@
 import { WHOOP_API_BASE_URL } from "./constants";
 import { refreshAccessToken, tokenResponseToConfig } from "./oauth";
-import type { Config, JsonObject, OverviewPayload } from "./types";
+import type {
+  Config,
+  JsonObject,
+  OverviewPayload,
+  RecoveryPayload,
+  SleepPayload,
+  UserPayload,
+} from "./types";
 
 let refreshInFlight: Promise<void> | null = null;
+const COLLECTION_PAGE_LIMIT = 25;
+const DETAIL_CONCURRENCY = 5;
+
+interface ListOptions {
+  limit?: number;
+}
 
 export class WhoopApiError extends Error {
   constructor(
@@ -17,42 +30,113 @@ export class WhoopApiError extends Error {
 export async function fetchOverview(
   config: Config,
   persistConfig: (config: Config) => Promise<void>,
+  options: ListOptions = {},
   fetchImpl: typeof fetch = fetch,
 ): Promise<OverviewPayload> {
-  const [profile, cycle] = await Promise.all([
-    getObject(
+  const limit = options.limit ?? 1;
+
+  const [profile, cycles] = await Promise.all([
+    getOptionalObject(
       "/developer/v2/user/profile/basic",
       config,
       persistConfig,
       fetchImpl,
     ),
-    getLatestFromCollection(
-      "/developer/v2/cycle",
-      config,
-      persistConfig,
-      fetchImpl,
-    ),
+    getCollectionRecords("/developer/v2/cycle", limit, config, persistConfig, fetchImpl),
   ]);
 
-  const cycleId = readCycleId(cycle);
-  if (!cycleId) {
-    return {
-      profile,
-      cycle,
-      recovery: null,
-      sleep: null,
-    };
-  }
+  const cycleEntries = await mapWithConcurrency(
+    cycles,
+    DETAIL_CONCURRENCY,
+    async (cycle) => {
+      const cycleId = readCycleId(cycle);
+      if (!cycleId) {
+        return {
+          cycle,
+          recovery: null,
+          sleep: null,
+        };
+      }
 
-  const [recovery, sleep] = await Promise.all([
+      const [recovery, sleep] = await Promise.all([
+        getOptionalObject(
+          `/developer/v2/cycle/${cycleId}/recovery`,
+          config,
+          persistConfig,
+          fetchImpl,
+        ),
+        getOptionalObject(
+          `/developer/v2/cycle/${cycleId}/sleep`,
+          config,
+          persistConfig,
+          fetchImpl,
+        ),
+      ]);
+
+      return {
+        cycle,
+        recovery,
+        sleep,
+      };
+    },
+  );
+
+  return {
+    profile,
+    cycles: cycleEntries,
+  };
+}
+
+export async function fetchRecovery(
+  config: Config,
+  persistConfig: (config: Config) => Promise<void>,
+  options: ListOptions = {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<RecoveryPayload> {
+  const limit = options.limit ?? 1;
+  const recoveries = await getCollectionRecords(
+    "/developer/v2/recovery",
+    limit,
+    config,
+    persistConfig,
+    fetchImpl,
+  );
+
+  return { recoveries };
+}
+
+export async function fetchSleep(
+  config: Config,
+  persistConfig: (config: Config) => Promise<void>,
+  options: ListOptions = {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<SleepPayload> {
+  const limit = options.limit ?? 1;
+  const sleeps = await getCollectionRecords(
+    "/developer/v2/activity/sleep",
+    limit,
+    config,
+    persistConfig,
+    fetchImpl,
+  );
+
+  return { sleeps };
+}
+
+export async function fetchUser(
+  config: Config,
+  persistConfig: (config: Config) => Promise<void>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<UserPayload> {
+  const [profile, bodyMeasurement] = await Promise.all([
     getOptionalObject(
-      `/developer/v2/cycle/${cycleId}/recovery`,
+      "/developer/v2/user/profile/basic",
       config,
       persistConfig,
       fetchImpl,
     ),
-    getOptionalObject(
-      `/developer/v2/cycle/${cycleId}/sleep`,
+    getOptionalRecord(
+      "/developer/v2/user/measurement/body",
       config,
       persistConfig,
       fetchImpl,
@@ -61,28 +145,41 @@ export async function fetchOverview(
 
   return {
     profile,
-    cycle,
-    recovery,
-    sleep,
+    bodyMeasurement,
   };
 }
 
-async function getLatestFromCollection(
+async function getCollectionRecords(
   path: string,
+  limit: number,
   config: Config,
   persistConfig: (config: Config) => Promise<void>,
   fetchImpl: typeof fetch,
-): Promise<JsonObject | null> {
-  const payload = await apiGet(path, config, persistConfig, fetchImpl, {
-    limit: "1",
-  });
+): Promise<JsonObject[]> {
+  const records: JsonObject[] = [];
+  let nextToken: string | null = null;
 
-  const records = extractRecords(payload, path);
-  if (records.length === 0) {
-    return null;
+  while (records.length < limit) {
+    const remaining = limit - records.length;
+    const query: Record<string, string> = {
+      limit: String(Math.min(COLLECTION_PAGE_LIMIT, remaining)),
+    };
+    if (nextToken) {
+      query.nextToken = nextToken;
+    }
+
+    const payload = await apiGet(path, config, persistConfig, fetchImpl, query);
+    const page = extractCollectionPage(payload, path);
+    records.push(...page.records);
+
+    if (page.records.length === 0 || !page.nextToken || page.nextToken === nextToken) {
+      break;
+    }
+
+    nextToken = page.nextToken;
   }
 
-  return records[0];
+  return records.slice(0, limit);
 }
 
 async function getObject(
@@ -97,6 +194,23 @@ async function getObject(
   }
 
   throw new Error(`Unexpected WHOOP response shape for ${path}.`);
+}
+
+async function getOptionalRecord(
+  path: string,
+  config: Config,
+  persistConfig: (config: Config) => Promise<void>,
+  fetchImpl: typeof fetch,
+): Promise<JsonObject | null> {
+  try {
+    const payload = await apiGet(path, config, persistConfig, fetchImpl);
+    return extractObjectOrLatestRecord(payload, path);
+  } catch (error) {
+    if (error instanceof WhoopApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function getOptionalObject(
@@ -285,7 +399,10 @@ async function parseResponse(
   );
 }
 
-function extractRecords(payload: unknown, path: string): JsonObject[] {
+function extractCollectionPage(
+  payload: unknown,
+  path: string,
+): { records: JsonObject[]; nextToken: string | null } {
   if (!isObject(payload) || !Array.isArray(payload.records)) {
     throw new Error(`Unexpected WHOOP collection response shape for ${path}.`);
   }
@@ -295,7 +412,60 @@ function extractRecords(payload: unknown, path: string): JsonObject[] {
     throw new Error(`Unexpected WHOOP collection item shape for ${path}.`);
   }
 
-  return records;
+  const nextTokenRaw = payload.nextToken ?? payload.next_token;
+  if (nextTokenRaw === undefined || nextTokenRaw === null) {
+    return { records, nextToken: null };
+  }
+
+  if (typeof nextTokenRaw !== "string") {
+    throw new Error(`Unexpected WHOOP pagination token shape for ${path}.`);
+  }
+
+  return { records, nextToken: nextTokenRaw };
+}
+
+function extractObjectOrLatestRecord(
+  payload: unknown,
+  path: string,
+): JsonObject | null {
+  if (!isObject(payload)) {
+    throw new Error(`Unexpected WHOOP response shape for ${path}.`);
+  }
+
+  if (!("records" in payload)) {
+    return payload;
+  }
+
+  const page = extractCollectionPage(payload, path);
+  return page.records.length > 0 ? page.records[0] : null;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 function isObject(value: unknown): value is JsonObject {

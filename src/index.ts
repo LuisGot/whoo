@@ -11,7 +11,7 @@ import {
   saveConfig,
 } from "./config";
 import { DEFAULT_OAUTH_SCOPE, DEFAULT_REDIRECT_URI } from "./constants";
-import { formatOverview } from "./format";
+import { formatOverview, formatRecovery, formatSleep, formatUser } from "./format";
 import {
   buildAuthorizeUrl,
   exchangeAuthorizationCode,
@@ -19,7 +19,8 @@ import {
   tokenResponseToConfig,
   waitForAuthCode,
 } from "./oauth";
-import { fetchOverview } from "./whoop";
+import type { Config } from "./types";
+import { fetchOverview, fetchRecovery, fetchSleep, fetchUser } from "./whoop";
 
 const HELP_TEXT = `
 whoop-cli
@@ -29,7 +30,10 @@ Usage:
 
 Commands:
   login               Authenticate with WHOOP and store token locally.
-  overview            Fetch WHOOP overview data.
+  overview            Fetch WHOOP cycle overview data.
+  recovery            Fetch WHOOP recovery data.
+  sleep               Fetch WHOOP sleep data.
+  user                Fetch WHOOP user profile and body measurements.
   status              Show auth/config status.
   logout              Remove all WHOOP CLI config.
   help                Show this help text.
@@ -40,6 +44,18 @@ login options:
   If omitted, both values are prompted in the terminal.
 
 overview options:
+  --limit <n>                Number of cycles to fetch (1-100, default: 1).
+  --json                     Emit raw JSON.
+
+recovery options:
+  --limit <n>                Number of records to fetch (1-100, default: 1).
+  --json                     Emit raw JSON.
+
+sleep options:
+  --limit <n>                Number of records to fetch (1-100, default: 1).
+  --json                     Emit raw JSON.
+
+user options:
   --json                     Emit raw JSON.
 `.trim();
 
@@ -69,6 +85,21 @@ async function main(): Promise<void> {
 
   if (command === "status") {
     await handleStatus();
+    return;
+  }
+
+  if (command === "recovery") {
+    await handleRecovery(parsed.flags);
+    return;
+  }
+
+  if (command === "sleep") {
+    await handleSleep(parsed.flags);
+    return;
+  }
+
+  if (command === "user") {
+    await handleUser(parsed.flags);
     return;
   }
 
@@ -144,16 +175,11 @@ async function handleOverview(
   flags: Record<string, string | boolean>,
 ): Promise<void> {
   const config = await loadConfig();
-  if (
-    !config.oauth?.clientId ||
-    !config.oauth?.clientSecret ||
-    !config.oauth?.refreshToken
-  ) {
-    throw new Error("Missing login credentials. Run `whoop login` first.");
-  }
+  requireLoggedInConfig(config);
 
-  const jsonOutput = flags.json === true || flags.json === "true";
-  const payload = await fetchOverview(config, saveConfig);
+  const jsonOutput = readJsonFlag(flags);
+  const limit = readLimitFlag(flags);
+  const payload = await fetchOverview(config, saveConfig, { limit });
 
   if (jsonOutput) {
     console.log(JSON.stringify(payload, null, 2));
@@ -161,6 +187,57 @@ async function handleOverview(
   }
 
   console.log(formatOverview(payload));
+}
+
+async function handleRecovery(
+  flags: Record<string, string | boolean>,
+): Promise<void> {
+  const config = await loadConfig();
+  requireLoggedInConfig(config);
+
+  const jsonOutput = readJsonFlag(flags);
+  const limit = readLimitFlag(flags);
+  const payload = await fetchRecovery(config, saveConfig, { limit });
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  console.log(formatRecovery(payload));
+}
+
+async function handleSleep(
+  flags: Record<string, string | boolean>,
+): Promise<void> {
+  const config = await loadConfig();
+  requireLoggedInConfig(config);
+
+  const jsonOutput = readJsonFlag(flags);
+  const limit = readLimitFlag(flags);
+  const payload = await fetchSleep(config, saveConfig, { limit });
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  console.log(formatSleep(payload));
+}
+
+async function handleUser(flags: Record<string, string | boolean>): Promise<void> {
+  const config = await loadConfig();
+  requireLoggedInConfig(config);
+
+  const jsonOutput = readJsonFlag(flags);
+  const payload = await fetchUser(config, saveConfig);
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  console.log(formatUser(payload));
 }
 
 async function handleStatus(): Promise<void> {
@@ -177,6 +254,42 @@ async function handleStatus(): Promise<void> {
 async function handleLogout(): Promise<void> {
   await clearAllConfig();
   console.log("Removed all WHOOP CLI config.");
+}
+
+function requireLoggedInConfig(config: Config): void {
+  if (
+    !config.oauth?.clientId ||
+    !config.oauth?.clientSecret ||
+    !config.oauth?.refreshToken
+  ) {
+    throw new Error("Missing login credentials. Run `whoop login` first.");
+  }
+}
+
+function readJsonFlag(flags: Record<string, string | boolean>): boolean {
+  return flags.json === true || flags.json === "true";
+}
+
+function readLimitFlag(flags: Record<string, string | boolean>): number {
+  const value = flags.limit;
+  if (value === undefined) {
+    return 1;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error("Missing value for --limit. Use --limit <n>.");
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error("Invalid --limit value. It must be an integer between 1 and 100.");
+  }
+
+  const limit = Number(value);
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+    throw new Error("Invalid --limit value. It must be an integer between 1 and 100.");
+  }
+
+  return limit;
 }
 
 async function promptCredentials(): Promise<{
