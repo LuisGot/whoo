@@ -64,13 +64,6 @@ bun run build
 node ./bin/whoo.js --version
 ```
 
-## Publish
-
-```bash
-bun run prepublishOnly
-npm publish --access public
-```
-
 ## Commands
 
 ```bash
