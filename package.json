@@ -1,6 +1,6 @@
 {
   "name": "@luisgot/whoo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI to access your WHOOP health data from your terminal",
   "type": "module",
   "publishConfig": {
