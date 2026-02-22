@@ -76,17 +76,12 @@ whoo help
 whoo login
 ```
 
-You can pass credentials directly:
-
-```bash
-whoo login --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
-```
+`whoo login` always prompts for `client_id` and `client_secret` interactively.
 
 For SSH/headless setups where localhost callback is not reachable, use manual mode:
 
 ```bash
 whoo login --manual
-whoo login --manual --client-id <YOUR_CLIENT_ID> --client-secret <YOUR_CLIENT_SECRET>
 ```
 
 ### Overview

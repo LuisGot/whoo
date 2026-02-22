@@ -36,11 +36,3 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   return { command: command ?? null, flags };
 }
-
-export function readStringFlag(
-  flags: Record<string, string | boolean>,
-  name: string,
-): string | undefined {
-  const value = flags[name];
-  return typeof value === "string" ? value : undefined;
-}

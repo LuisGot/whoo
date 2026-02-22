@@ -13,7 +13,7 @@
 
 - `bun install` installs dependencies.
 - `bun run src/index.ts help` shows CLI usage.
-- `bun run src/index.ts login` starts OAuth login (add `--client-id` and `--client-secret` to skip prompts).
+- `bun run src/index.ts login` starts OAuth login with interactive credential prompts.
 - `bun run src/index.ts overview --json` fetches overview data as raw JSON.
 - `bun test` runs the Bun test suite.
 - `bunx tsc --noEmit` runs strict TypeScript checks using `tsconfig.json`.

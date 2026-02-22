@@ -2,7 +2,7 @@ import { input, password } from "@inquirer/prompts";
 import { createRequire } from "node:module";
 
 import { openBrowser } from "./browser";
-import { parseArgs, readStringFlag } from "./cli";
+import { parseArgs } from "./cli";
 import {
   clearAllConfig,
   getConfigPath,
@@ -52,10 +52,8 @@ Commands:
   help                Show this help text.
 
 login options:
-  --client-id <id>
-  --client-secret <secret>
   --manual                   Manual login for SSH/headless use (paste callback URL).
-  If omitted, both values are prompted in the terminal.
+  Client ID and secret are prompted in the terminal.
 
 overview options:
   --limit <n>                Number of cycles to fetch (1-100, default: 1).
@@ -134,25 +132,7 @@ async function handleLogin(
   flags: Record<string, string | boolean>,
 ): Promise<void> {
   const config = await loadConfig();
-  const argClientId = readStringFlag(flags, "client-id")?.trim();
-  const argClientSecret = readStringFlag(flags, "client-secret")?.trim();
-
-  if ((argClientId && !argClientSecret) || (!argClientId && argClientSecret)) {
-    throw new Error(
-      "Provide both --client-id and --client-secret, or provide neither and the CLI will prompt for both.",
-    );
-  }
-
-  let clientId = argClientId;
-  let clientSecret = argClientSecret;
-  if (!clientId && !clientSecret) {
-    const prompted = await promptCredentials();
-    clientId = prompted.clientId;
-    clientSecret = prompted.clientSecret;
-  }
-  if (!clientId || !clientSecret) {
-    throw new Error("Missing client credentials.");
-  }
+  const { clientId, clientSecret } = await promptCredentials();
 
   const redirectUri = DEFAULT_REDIRECT_URI;
   const scope = DEFAULT_OAUTH_SCOPE;
@@ -360,9 +340,7 @@ async function promptCredentials(): Promise<{
   clientSecret: string;
 }> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    throw new Error(
-      "Interactive login requires a TTY. Pass --client-id and --client-secret.",
-    );
+    throw new Error("Login requires a TTY.");
   }
 
   const clientId = (await promptRequiredInput("WHOOP Client ID")).trim();
