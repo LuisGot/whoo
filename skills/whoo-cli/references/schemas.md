@@ -1,7 +1,7 @@
 # whoo CLI — JSON Output Schemas
 
-Reference these schemas when using `--json` flags to parse WHOOP data programmatically.
-All duration fields are in milliseconds — divide by `3_600_000` for hours, `60_000` for minutes.
+Reference for `--json` flag output. All duration fields are in milliseconds — divide by
+`3_600_000` for hours or `60_000` for minutes.
 
 ---
 
@@ -56,10 +56,10 @@ All duration fields are in milliseconds — divide by `3_600_000` for hours, `60
           baseline_milli: number,
           need_from_sleep_debt_milli: number,
           need_from_recent_strain_milli: number,
-          need_from_recent_nap_milli: number        // negative when a nap reduces need
+          need_from_recent_nap_milli: number        // negative when nap reduces need
         },
         respiratory_rate: number,                   // breaths/min
-        sleep_performance_percentage: number,       // actual vs needed sleep (%)
+        sleep_performance_percentage: number,       // actual vs needed (%)
         sleep_consistency_percentage: number,       // vs prior 28-day pattern (%)
         sleep_efficiency_percentage: number         // time asleep / time in bed (%)
       }
